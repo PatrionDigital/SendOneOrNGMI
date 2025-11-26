@@ -23,9 +23,9 @@ export default function HomePage() {
   const { address } = useAccount();
 
   // Platform detection for UX customization
-  const isBaseApp = context?.client?.clientFid === '309857';
+  const isBaseApp = context?.client?.clientFid === 309857;
   const isFarcaster =
-    context?.client?.clientFid === '1' || context?.client?.clientFid === '9152';
+    context?.client?.clientFid === 1 || context?.client?.clientFid === 9152;
 
   // Signal frame is ready (CRITICAL for Mini-Apps)
   useEffect(() => {
@@ -96,7 +96,7 @@ export default function HomePage() {
   const safePotValue = potValue ?? BigInt(0);
   const safeTotalEntries = totalEntries ?? BigInt(0);
   const safeEstimatedPayout = estimatedPayout ?? BigInt(0);
-  const safeQueue = queue ?? ([] as readonly `0x${string}`[]);
+  const safeQueue: readonly `0x${string}`[] = Array.isArray(queue) ? queue : [];
 
   return (
     <div className="min-h-screen bg-black text-white">

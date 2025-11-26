@@ -45,8 +45,8 @@ export function CTASection() {
     setTimeout(() => setShowConfetti(false), 5000);
   }, []);
 
-  const handleError = useCallback((error: Error) => {
-    console.error('Transaction error:', error);
+  const handleError = useCallback((error: { code: string; error: string; message: string }) => {
+    console.error('Transaction error:', error.message);
   }, []);
 
   return (

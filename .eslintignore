@@ -1,0 +1,13 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+.next/
+out/
+cache/
+
+# Foundry/Solidity libraries - these have their own linting
+lib/
+
+# Generated files
+*.min.js
