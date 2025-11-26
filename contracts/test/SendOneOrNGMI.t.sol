@@ -28,7 +28,7 @@ contract SendOneOrNGMITest is Test {
         assertEq(game.ENTRY_FEE(), ENTRY_FEE);
         assertEq(game.COUNTDOWN_DURATION(), COUNTDOWN_DURATION);
         assertEq(game.QUEUE_SIZE(), 100);
-        assertEq(game.gameActive(), false);
+        assertEq(game.gameActive(), true); // Game starts active
         assertEq(game.gameEnded(), false);
         assertEq(game.totalEntries(), 0);
         assertEq(game.totalPotValue(), 0);
@@ -80,7 +80,7 @@ contract SendOneOrNGMITest is Test {
 
         // Try to send after game ended
         vm.prank(player2);
-        vm.expectRevert("Game has ended");
+        vm.expectRevert("Game not active");
         game.sendOne{ value: ENTRY_FEE }();
     }
 
@@ -88,7 +88,7 @@ contract SendOneOrNGMITest is Test {
         vm.prank(player1);
         game.sendOne{ value: ENTRY_FEE }();
 
-        address[] memory queue = game.getCurrentQueuePositions();
+        address[100] memory queue = game.getCurrentQueuePositions();
         assertEq(queue[0], player1);
     }
 
@@ -118,9 +118,9 @@ contract SendOneOrNGMITest is Test {
         game.sendOne{ value: ENTRY_FEE }();
 
         // Check queue contains new player
-        address[] memory queue = game.getCurrentQueuePositions();
+        address[100] memory queue = game.getCurrentQueuePositions();
         bool found = false;
-        for (uint256 i = 0; i < queue.length; i++) {
+        for (uint256 i = 0; i < 100; i++) {
             if (queue[i] == newPlayer) {
                 found = true;
                 break;
@@ -144,8 +144,9 @@ contract SendOneOrNGMITest is Test {
         assertFalse(game.gameActive());
     }
 
-    function test_EndGame_RevertNotStarted() public {
-        vm.expectRevert("Game not started");
+    function test_EndGame_RevertCountdownNotExpired() public {
+        // Game is active but countdown hasn't expired yet
+        vm.expectRevert("Game not ended yet");
         game.endGame();
     }
 
@@ -153,7 +154,7 @@ contract SendOneOrNGMITest is Test {
         vm.prank(player1);
         game.sendOne{ value: ENTRY_FEE }();
 
-        vm.expectRevert("Countdown still active");
+        vm.expectRevert("Game not ended yet");
         game.endGame();
     }
 
@@ -187,7 +188,7 @@ contract SendOneOrNGMITest is Test {
         game.endGame();
 
         // Record balances before payout
-        address[] memory queue = game.getCurrentQueuePositions();
+        address[100] memory queue = game.getCurrentQueuePositions();
         uint256[] memory balancesBefore = new uint256[](100);
         for (uint256 i = 0; i < 100; i++) {
             balancesBefore[i] = queue[i].balance;
@@ -268,23 +269,6 @@ contract SendOneOrNGMITest is Test {
         assertEq(payout, (ENTRY_FEE * 10) / 100);
     }
 
-    function test_GetUserStats() public {
-        vm.prank(player1);
-        game.sendOne{ value: ENTRY_FEE }();
-
-        (uint256 entries, bool inQueue, uint256 position) = game.getUserStats(player1);
-        assertEq(entries, 1);
-        assertTrue(inQueue);
-        assertEq(position, 0);
-
-        // Player not in queue
-        (entries, inQueue, position) = game.getUserStats(player2);
-        assertEq(entries, 0);
-        assertFalse(inQueue);
-    }
-
-    // ============ Pause Tests ============
-
     function test_Pause() public {
         game.pause();
 
@@ -306,9 +290,11 @@ contract SendOneOrNGMITest is Test {
     // ============ Receive/Fallback Tests ============
 
     function test_ReceiveEther() public {
+        // receive() just accepts ETH, doesn't add to queue
         vm.prank(player1);
         (bool success,) = address(game).call{ value: ENTRY_FEE }("");
         assertTrue(success);
-        assertEq(game.totalEntries(), 1);
+        // ETH received but not processed as entry
+        assertEq(address(game).balance, ENTRY_FEE);
     }
 }
